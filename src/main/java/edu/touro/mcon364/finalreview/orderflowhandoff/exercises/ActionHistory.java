@@ -32,11 +32,12 @@ import java.util.Optional;
 
  */
 public class ActionHistory {
-    Deque<Action> undoStack = new ArrayDeque<>();
-    Deque<Action> redoStack = new ArrayDeque<>();
+    Deque<Action> undoStack = new ArrayDeque<>();   //if needed take off.
+    Deque<Action> redoStack = new ArrayDeque<>();   //once taken off, if need again
 
     public void perform(Action action) {
         // TODO: implement based on the requirements above
+        redoStack.clear();
         undoStack.addLast(action);
     }
 
@@ -56,8 +57,10 @@ public class ActionHistory {
         // TODO: implement based on the requirements above
         if (redoStack.isEmpty()) {
             return Optional.empty();
-        } else
-            return Optional.ofNullable(redoStack.removeFirst());
+        } else {
+            undoStack.addLast(redoStack.getLast());
+            return Optional.ofNullable(redoStack.removeLast());
+        }
     }
 
     public int getUndoCount() {
