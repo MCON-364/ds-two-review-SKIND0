@@ -4,6 +4,8 @@ import edu.touro.mcon364.finalreview.model.LogLevel;
 import edu.touro.mcon364.finalreview.model.LogMessage;
 
 import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * LogProcessor.
@@ -61,12 +63,21 @@ public class LogProcessor {
      * - total processed count
      * - count by log level
      */
+    BlockingQueue<LogMessage> queue =  new LinkedBlockingQueue<>();
+    AtomicInteger counter = new AtomicInteger(0);
+    ConcurrentHashMap<LogLevel, Integer> counter2 = new ConcurrentHashMap<>();
+    ExecutorService pool;
 
     /**
      * Accept one message for processing.
      */
     public void submit(LogMessage message) {
         // TODO: implement
+        try {
+            queue.put(message);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -74,6 +85,13 @@ public class LogProcessor {
      */
     public void start(int workerCount) {
         // TODO: implement
+        if (workerCount <= 0)
+            throw new IllegalArgumentException("must be a positive number");
+
+        pool = Executors.newFixedThreadPool(workerCount);
+        for (int i = 0; i < workerCount; i++) {
+            pool.submit(this::workerLoop);
+        }
     }
 
     /**
@@ -84,6 +102,14 @@ public class LogProcessor {
      */
     private void workerLoop() {
         // TODO: implement
+        try {
+            while (true) {
+                LogMessage message = queue.take();
+                process(message);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -91,21 +117,33 @@ public class LogProcessor {
      */
     private void process(LogMessage message) {
         // TODO: implement
+        counter.incrementAndGet();
+        counter2.merge(message.level(), 1, Integer::sum);
+
     }
 
     /**
      * Stop the processor and wait for worker threads to finish.
      */
     public void stop() throws InterruptedException {
-        // TODO: implement
+        // TODO: signal that work should stop
+        // TODO: wait for all workers to finish
+        if (pool == null) return;
+        pool.shutdown();
+        while( !queue.isEmpty() ) {
+            Thread.sleep(10);
+        }
+        pool.shutdownNow();
+        pool.awaitTermination(10, TimeUnit.SECONDS);
     }
+
 
     /**
      * Return the number of messages processed so far.
      */
     public int getTotalProcessed() {
         // TODO: implement
-        return 0;
+        return counter.get();
     }
 
     /**
@@ -113,6 +151,6 @@ public class LogProcessor {
      */
     public Map<LogLevel, Integer> getCountsByLevel() {
         // TODO: implement
-        return Map.of();
+        return Map.copyOf(counter2);
     }
 }
