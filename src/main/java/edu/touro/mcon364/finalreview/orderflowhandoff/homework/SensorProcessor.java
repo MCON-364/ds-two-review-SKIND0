@@ -1,8 +1,13 @@
 package edu.touro.mcon364.finalreview.orderflowhandoff.homework;
 
+import edu.touro.mcon364.finalreview.model.LogMessage;
 import edu.touro.mcon364.finalreview.model.SensorReading;
 
 import java.util.DoubleSummaryStatistics;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Homework 2 — Sensor reading processor.
@@ -42,6 +47,10 @@ import java.util.DoubleSummaryStatistics;
  * - If several workers update the same stats, how will those updates stay correct?
  */
 public class SensorProcessor {
+    BlockingQueue<SensorReading> queue =  new LinkedBlockingQueue<>();
+    ExecutorService pool;
+    AtomicInteger count = new  AtomicInteger(0);
+    DoubleSummaryStatistics stats = new  DoubleSummaryStatistics();
 
     /**
      * Accept one sensor reading for processing.
@@ -50,6 +59,11 @@ public class SensorProcessor {
      */
     public void submit(SensorReading reading) {
         // TODO: decide where submitted readings should be stored
+        try {
+            queue.put(reading);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -61,6 +75,11 @@ public class SensorProcessor {
     public void start(int workerCount) {
         // TODO: validate workerCount
         // TODO: start the requested number of workers
+        if (workerCount <= 0) throw new IllegalArgumentException("Must be a positive number");
+        pool = Executors.newFixedThreadPool(workerCount);
+        for (int i = 0; i < workerCount; i++) {
+            pool.submit(this::workerLoop);
+        }
     }
 
     /**
@@ -72,6 +91,20 @@ public class SensorProcessor {
      */
     private void workerLoop() {
         // TODO: implement the worker behavior
+        try {
+            while (true) {
+                SensorReading reading = queue.take();
+               process(reading);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private synchronized void process(SensorReading reading) {
+        count.getAndIncrement();
+        stats.accept(reading.value());
+
     }
 
     /**
@@ -82,6 +115,13 @@ public class SensorProcessor {
     public void stop() throws InterruptedException {
         // TODO: signal that work should stop
         // TODO: wait for all workers to finish
+        if (pool == null) return;
+        pool.shutdown();
+        while( !queue.isEmpty() ) {
+            Thread.sleep(10);
+        }
+        pool.shutdownNow();
+        pool.awaitTermination(10, TimeUnit.SECONDS);
     }
 
     /**
@@ -89,7 +129,7 @@ public class SensorProcessor {
      */
     public int getTotalProcessed() {
         // TODO: return the processed count safely
-        return 0;
+        return count.get();
     }
 
     /**
@@ -100,6 +140,8 @@ public class SensorProcessor {
      */
     public DoubleSummaryStatistics getStats() {
         // TODO: calculate or return the current statistics safely
-        return new DoubleSummaryStatistics();
+        DoubleSummaryStatistics copy = new DoubleSummaryStatistics();
+        copy.combine(stats);
+        return copy;
     }
 }

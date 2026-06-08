@@ -2,7 +2,9 @@ package edu.touro.mcon364.finalreview.orderflowhandoff.homework;
 
 import edu.touro.mcon364.finalreview.model.PrintJob;
 
+import java.util.LinkedList;
 import java.util.Optional;
+import java.util.Queue;
 
 /**
  * Homework 1 — PrintQueue.
@@ -39,6 +41,8 @@ import java.util.Optional;
 public class PrintQueue {
 
     // TODO: choose the field or fields needed to remember waiting print jobs
+    //stack is LIFO. so a queue is FIFO perfect.
+    Queue<PrintJob> queue =  new LinkedList<>();
 
     /**
      * Records a new print job as waiting.
@@ -47,6 +51,8 @@ public class PrintQueue {
      */
     public void submit(PrintJob job) {
         // TODO: implement
+        //what do you mean records? why not return or anything. ig add.
+        queue.add(job);
     }
 
     /**
@@ -56,7 +62,7 @@ public class PrintQueue {
      */
     public Optional<PrintJob> printNext() {
         // TODO: implement
-        return Optional.empty();
+        return Optional.ofNullable(queue.poll());
     }
 
     /**
@@ -66,7 +72,7 @@ public class PrintQueue {
      */
     public Optional<PrintJob> peekNext() {
         // TODO: implement
-        return Optional.empty();
+        return Optional.ofNullable(queue.peek());
     }
 
     /**
@@ -74,6 +80,6 @@ public class PrintQueue {
      */
     public int queuedJobs() {
         // TODO: implement
-        return 0;
+        return queue.size();
     }
 }
