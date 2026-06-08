@@ -1,5 +1,7 @@
 package edu.touro.mcon364.finalreview.treesandthreads.homework;
 
+import edu.touro.mcon364.finalreview.treesandthreads.model.ScoreEntry;
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,6 +58,8 @@ public class ConcurrentEventLog {
      */
     public void logEvent(long timestamp, String message) {
         // TODO
+        long key = timestamp * 1_000_000L + sequence.getAndIncrement();
+        log.put(key, message);
     }
 
     /**
@@ -68,9 +72,22 @@ public class ConcurrentEventLog {
      * @param sources    list of source names
      * @param eventsEach number of events each source logs
      */
-    public void runConcurrentSources(List<String> sources, int eventsEach)
-            throws InterruptedException {
+    public void runConcurrentSources(List<String> sources, int eventsEach) {
         // TODO
+        ExecutorService pool = Executors.newFixedThreadPool(sources.size());
+        for (String source : sources) {
+            pool.submit(() -> {
+                for  (int i = 0; i < eventsEach; i++) {
+                    logEvent(System.currentTimeMillis(), source + "-" + 1);
+                }
+            });
+        }
+        pool.shutdown();
+        try {
+            pool.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -79,7 +96,7 @@ public class ConcurrentEventLog {
      */
     public List<String> getEventsAfter(long timestamp) {
         // TODO
-        return List.of();
+        return new ArrayList<>(log.tailMap((timestamp + 1) * 1_000_000L).values());
     }
 
     /**
@@ -87,7 +104,7 @@ public class ConcurrentEventLog {
      */
     public List<String> getEventsBetween(long from, long to) {
         // TODO
-        return List.of();
+        return new ArrayList<>(log.subMap(from * 1_000_000L, true, (to + 1) * 1_000_000L, false).values());
     }
 
     /**
@@ -95,7 +112,7 @@ public class ConcurrentEventLog {
      */
     public List<String> getMostRecentN(int n) {
         // TODO
-        return List.of();
+        return log.descendingMap().values().stream().limit(n).collect(Collectors.toUnmodifiableList());
     }
 
     /** Returns the total number of logged events. */

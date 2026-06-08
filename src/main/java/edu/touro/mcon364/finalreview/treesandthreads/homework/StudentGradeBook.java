@@ -1,5 +1,7 @@
 package edu.touro.mcon364.finalreview.treesandthreads.homework;
 
+import edu.touro.mcon364.finalreview.model.StudentSubmission;
+
 import java.util.*;
 import java.util.stream.*;
 
@@ -33,7 +35,7 @@ public class StudentGradeBook {
 
     public StudentGradeBook(Map<String, Double> grades) {
         // TODO: validate non-null; store a defensive copy
-        this.grades = Map.of();
+        this.grades = Map.copyOf(Objects.requireNonNull(grades));
     }
 
     /**
@@ -42,7 +44,7 @@ public class StudentGradeBook {
      */
     public TreeMap<String, Double> buildSortedGradeBook() {
         // TODO
-        return new TreeMap<>();
+        return new TreeMap<>(grades);
     }
 
     /**
@@ -51,7 +53,7 @@ public class StudentGradeBook {
      */
     public DoubleSummaryStatistics getStatistics() {
         // TODO
-        return new DoubleSummaryStatistics();
+        return grades.values().stream().mapToDouble(Double::doubleValue).summaryStatistics();
     }
 
     /**
@@ -60,7 +62,14 @@ public class StudentGradeBook {
      */
     public TreeMap<String, Long> getLetterGradeDistribution() {
         // TODO
-        return new TreeMap<>();
+        return buildSortedGradeBook().values().stream().collect(Collectors.groupingBy(
+                s -> {
+                    if (s >= 90) return "A";
+                    else if (s >= 80) return "B";
+                    else if (s >= 70) return "C";
+                    else if (s >= 60) return "D";
+                    else return "F";
+                }, TreeMap::new, Collectors.counting()));
     }
 
     /**
@@ -68,7 +77,8 @@ public class StudentGradeBook {
      */
     public List<String> getTopStudents(int n) {
         // TODO
-        return List.of();
+        return buildSortedGradeBook().entrySet().stream().sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .limit(n).map(Map.Entry::getKey).toList();
     }
 
     /**
@@ -77,6 +87,7 @@ public class StudentGradeBook {
      */
     public List<String> getStudentsInScoreRange(double low, double high) {
         // TODO
-        return List.of();
+        return buildSortedGradeBook().entrySet().stream().filter(e -> e.getValue() >= low && e.getValue() <= high)
+                .map(Map.Entry::getKey).sorted().toList();
     }
 }

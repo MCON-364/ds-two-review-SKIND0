@@ -2,6 +2,7 @@ package edu.touro.mcon364.finalreview.treesandthreads.exercises;
 
 import edu.touro.mcon364.finalreview.treesandthreads.model.Employee;
 
+import javax.swing.*;
 import java.util.*;
 import java.util.stream.*;
 
@@ -44,9 +45,8 @@ public class EmployeeRoster {
 
     public EmployeeRoster(List<Employee> employees) {
         // TODO: validate non-null, store a defensive copy
-        if (employees.isEmpty())
-            throw new IllegalArgumentException();
-        this.employees = employees;
+        Objects.requireNonNull(employees, "employees cannot be null");
+        this.employees = List.copyOf(employees);
     }
 
     /**
@@ -56,7 +56,8 @@ public class EmployeeRoster {
      */
     public TreeMap<String, TreeSet<Employee>> buildRoster() {
         // TODO
-        return new TreeMap<>();
+        return employees.stream().collect(Collectors.groupingBy(
+                Employee::department, TreeMap::new, Collectors.toCollection(TreeSet::new)));
     }
 
     /**
@@ -66,7 +67,9 @@ public class EmployeeRoster {
      */
     public Map<String, Employee> getTopEarnerPerDepartment() {
         // TODO
-        return Map.of();
+        return buildRoster().entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey, e -> e.getValue().stream()
+                        .max(Comparator.comparingDouble(Employee::salary)).orElseThrow()));
     }
 
     /**
@@ -77,7 +80,7 @@ public class EmployeeRoster {
      */
     public List<Employee> getAllEmployeesSorted() {
         // TODO
-        return List.of();
+        return employees.stream().sorted().collect(Collectors.toList());
     }
 
     /**
@@ -90,7 +93,8 @@ public class EmployeeRoster {
      */
     public NavigableMap<String, TreeSet<Employee>> getDepartmentsInRange(String from, String to) {
         // TODO
-        return new TreeMap<>();
+        TreeMap<String, TreeSet<Employee>> departments = buildRoster();
+        return departments.subMap(from, true, to, true);
     }
 }
 

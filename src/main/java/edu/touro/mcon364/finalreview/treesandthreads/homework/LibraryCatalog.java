@@ -36,7 +36,7 @@ public class LibraryCatalog {
 
     public LibraryCatalog(List<Book> books) {
         // TODO: validate non-null, store a defensive copy
-        this.books = List.of();
+        this.books = List.copyOf(Objects.requireNonNull(books));
     }
 
     /**
@@ -46,7 +46,7 @@ public class LibraryCatalog {
      */
     public TreeMap<String, Book> buildTitleIndex() {
         // TODO
-        return new TreeMap<>();
+        return books.stream().collect(Collectors.toMap(Book::title, b -> b, (a, b) -> a, TreeMap::new));
     }
 
     /**
@@ -55,7 +55,8 @@ public class LibraryCatalog {
      */
     public TreeMap<String, TreeSet<Book>> buildAuthorIndex() {
         // TODO
-        return new TreeMap<>();
+        return books.stream().collect(Collectors.groupingBy(
+                Book::author, TreeMap::new, Collectors.toCollection(TreeSet::new)));
     }
 
     /**
@@ -64,7 +65,7 @@ public class LibraryCatalog {
      */
     public List<Book> getBooksPublishedBefore(int year) {
         // TODO
-        return List.of();
+        return books.stream().filter(x -> x.year() < year).sorted(Comparator.comparing(Book::title)).collect(Collectors.toList());
     }
 
     /**
@@ -73,7 +74,9 @@ public class LibraryCatalog {
      */
     public List<String> getAuthorsWithMoreThan(int n) {
         // TODO
-        return List.of();
+        return buildAuthorIndex().entrySet().stream()
+                .filter(x -> x.getValue().size() > n)
+                .map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
     /**
@@ -82,7 +85,7 @@ public class LibraryCatalog {
      */
     public List<Book> findByTitlePrefix(String prefix) {
         // TODO
-        return List.of();
+        return books.stream().filter(x -> x.title().startsWith(prefix)).sorted(Comparator.comparing(Book::title)).collect(Collectors.toList());
     }
 }
 
